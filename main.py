@@ -75,7 +75,7 @@ fig.update_traces(marker=dict(color='red', line=dict(color='red', width=1)))
 fig.show()
 
 
-
+import plotly.graph_objects as go
 
 conn = get_conn()
 
@@ -102,32 +102,37 @@ Low_GDP_Life_Exp = data[0][3]
 data = pd.DataFrame({'Category': ['High_GDP_Count', 'Low_GDP_Count', 'High_GDP_Life_Exp', 'Low_GDP_Life_Exp'],
 'Value':[High_GDP_Count, Low_GDP_Count, High_GDP_Life_Exp, Low_GDP_Life_Exp]})
 
-color_mapping={'High_GDP_Count' : ' Geyser_r ',
-               'Low_GDP_Count':'Geyser','High_GDP_Life_Exp':'indianred', 'Low_GDP_Life_Exp':'Geyser_r'
+#color_mapping={'High_GDP_Count' : ' Geyser_r ',
+#               'Low_GDP_Count':'Geyser','High_GDP_Life_Exp':'indianred', 'Low_GDP_Life_Exp':'Geyser_r'
         
-}
+#}
 data.sort_values('Value', ascending=False, inplace=True)
 
 fig = px.bar( 
              data, x='Category', y='Value', template="simple_white", #integrated template
              title='<b>Countires GDP Count</b><br><sup>Lower than 1500 GDP</sup>',
              text=data['Value'].apply(lambda x: f'{x:.0f}', #apply formatted values
-             ))
-             #labels={'Value':'Value'},
+             ), )
+             
              #title="Countires that have a higher GDP than 1500",
              #color=color_mapping)
         #hoverformat="Country: %{text}<br>Avg GDP: %{x:.2f}<br>Life Exp: %{y:.1f}"
 
-fig.update_xaxes(tickfont=dict(size=12), title_text='' )
+
+fig.update_xaxes(tickfont=dict(size=12), title_text='', showticklabels=False )
 fig.update_yaxes(tickfont=dict(size=12),title_text='')
 
 
 #Highlight the Most  important category
 
-hightlighted_bar= 'Low_GDP_Count'
+hightlighted_bar = 'Low_GDP_Count'
 
 
 fig.update_traces(marker_color=['indianred' if x == hightlighted_bar else 'grey' for x in data['Category']],)
+
+fig.add_trace(
+    go.Bar(x=['Low_GDP_Count'], y=[0], marker=dict(color='indianred'), showlegend=True, name='Lowest GDP Count')
+)
 
 
 fig.show()
