@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from src.db.conn import get_conn
 import plotly.express as px
+import plotly.graph_objects as go
+
 
 
 
@@ -67,15 +69,20 @@ data = pd.DataFrame({'Country': country, 'Average Life Expectancy': avg_life_exp
 
 fig = px.scatter(
         data, x='Avg_GDP', y='Average Life Expectancy',hover_name='Country',
-        labels={'Avg_GDP': 'Average GDP', 'avg_life_exp': 'Average Life Expectancy'},
-        title="GDP correlation and Life expectancy")
+        template="simple_white",
+        #labels={'Avg_GDP': 'Average GDP', 'avg_life_exp': 'Average Life Expectancy'},
+        title="<b>GDP correlation </b><br><sup>& Life expectancy<sup>")
         #hoverformat="Country: %{text}<br>Avg GDP: %{x:.2f}<br>Life Exp: %{y:.1f}"
 
-fig.update_traces(marker=dict(color='red', line=dict(color='red', width=1)))
+fig.update_traces(marker=dict(color='green', line=dict(color='green', width=0.5),))
+fig.update_yaxes(tickfont=dict(size=12),title_text='')
+fig.update_xaxes(tickfont=dict(size=12),title_text='')
 fig.show()
+fig.add_trace(showlegend=True)
 
+#------------------------------------------------
 
-import plotly.graph_objects as go
+# Countries GDP Count Lower than 1500 GDP
 
 conn = get_conn()
 
@@ -94,6 +101,8 @@ from worldlifeexpectancy;
 
 cursor.execute(query)
 data = cursor.fetchall()
+
+# Fetch data agrregate
 High_GDP_Count = data[0][0]
 Low_GDP_Count = data[0][2]
 High_GDP_Life_Exp = data[0][1]
@@ -111,7 +120,8 @@ data.sort_values('Value', ascending=False, inplace=True)
 fig = px.bar( 
              data, x='Category', y='Value', template="simple_white", #integrated template
              title='<b>Countires GDP Count</b><br><sup>Lower than 1500 GDP</sup>',
-             text=data['Value'].apply(lambda x: f'{x:.0f}', #apply formatted values
+             #apply formatted values
+             text=data['Value'].apply(lambda x: f'{x:.0f}', 
              ), )
              
              #title="Countires that have a higher GDP than 1500",
@@ -119,20 +129,91 @@ fig = px.bar(
         #hoverformat="Country: %{text}<br>Avg GDP: %{x:.2f}<br>Life Exp: %{y:.1f}"
 
 
+#Remove labels on both axis
+
 fig.update_xaxes(tickfont=dict(size=12), title_text='', showticklabels=False )
 fig.update_yaxes(tickfont=dict(size=12),title_text='')
 
 
-#Highlight the Most  important category
+#Highlight the Most important category
 
 hightlighted_bar = 'Low_GDP_Count'
 
+fig.update_traces(marker_color=['indianred' if x == hightlighted_bar else 'grey' for x in data['Category']],hovertemplate='%{x}')
 
-fig.update_traces(marker_color=['indianred' if x == hightlighted_bar else 'grey' for x in data['Category']],)
-
+# Add color to only the important metric: Low_GDP_Count
 fig.add_trace(
     go.Bar(x=['Low_GDP_Count'], y=[0], marker=dict(color='indianred'), showlegend=True, name='Lowest GDP Count')
 )
 
+fig.show()
+
+
+
+#------------------------------------------------
+
+# Seeing Correlation between 
+# Developed/Developing status and Life expectancy
+conn = get_conn()
+cursor = conn.cursor()
+
+query = """
+select status, count(distinct country), 
+round(avg(`Life expectancy`),1) as AVG_Life_Expectancy
+from worldlifeexpectancy
+group by status;
+"""
+
+cursor.execute(query)
+data = cursor.fetchall()
+
+status = [row[0] for row in data ]
+country = [row[1] for row in data]
+Avg_Life_Exp = [row[2] for row in data]
+
+
+data = pd.DataFrame({
+        'Status': status,
+        'Country Count': country,
+        'AVG_Life_Exp': Avg_Life_Exp
+})
+
+data.sort_values('Country Count', ascending=False, inplace=True)
+
+fig = px.bar(
+        data, x='Status', y='Country Count', template="simple_white", 
+        title='<b>Developed/Developing status</b><br><sup>& Life expectancy</sup>',
+        text=data['Country Count'].apply(lambda x: f'{x:.0f}',),
+        custom_data=data[['AVG_Life_Exp']]
+        )
+
+hightlighted_bar = 'Developing'
+
+fig.update_traces(marker_color=['indianred' if x == hightlighted_bar else 'grey' for x in data['Status']],hovertemplate='%{x} -' + ' Avg.Life Expectancy: %{customdata[0]:.1f}')
+
+# Add color to only the important metric: Low_GDP_Count
+fig.add_trace(
+    go.Bar(x=['Developing'], y=[0], marker=dict(color='indianred'), showlegend=True, name='Developing Countries')
+)
+
+fig.update_xaxes(tickfont=dict(size=12), title_text='', showticklabels=False )
+fig.update_yaxes(tickfont=dict(size=12),title_text='')
+
+
 
 fig.show()
+
+#-----------------------------------------------------------------
+
+# BMI comparison on each countries life expectancy
+
+
+
+query = """
+select country, round(AVG(`Life expectancy`),1) as AVG_Life_Expectancy, round(AVG(BMI),2) as Avg_BMI
+from worldlifeexpectancy
+group by country
+having Avg_BMI > 0
+and  AVG_Life_Expectancy > 0
+order by Avg_BMI asc;
+"""
