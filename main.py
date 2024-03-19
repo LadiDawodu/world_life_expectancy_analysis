@@ -5,6 +5,7 @@ import seaborn as sns
 from src.db.conn import get_conn
 import plotly.express as px
 import plotly.graph_objects as go
+#from plotly.graph_objs import Scatter
 
 
 
@@ -207,7 +208,8 @@ fig.show()
 
 # BMI comparison on each countries life expectancy
 
-
+conn = get_conn()
+cursor = conn.cursor()
 
 query = """
 select country, round(AVG(`Life expectancy`),1) as AVG_Life_Expectancy, round(AVG(BMI),2) as Avg_BMI
@@ -217,3 +219,81 @@ having Avg_BMI > 0
 and  AVG_Life_Expectancy > 0
 order by Avg_BMI asc;
 """
+
+cursor.execute(query)
+data = cursor.fetchall()
+
+country = [row[0] for row in data]
+AVG_Life_Exp = [row[1] for row in data]
+Avg_BMI = [row[2] for row in data]
+
+data = pd.DataFrame({
+        'Country': country,
+        'Avg_BMI': Avg_BMI,
+        'AVG_Life_Exp': AVG_Life_Exp
+})
+
+
+fig = px.scatter(data, x='AVG_Life_Exp', y='Avg_BMI', template='simple_white', color='Avg_BMI', color_continuous_scale='Reds',  
+title='<b>BMI comparison</b><br><sup> based on countries life expectancy</sup>', custom_data=['Country', 'Avg_BMI', 'AVG_Life_Exp'])
+
+
+fig.update_traces(hovertemplate="<b>Country</b>: %{customdata[0]}<br>"
+                 "<b>Avg Life Exp</b>: %{customdata[1]:.1f} years<br>"
+                 "<b>Avg BMI</b>: %{customdata[2]:.2f}")
+
+fig.update_xaxes(tickfont=dict(size=12), title_text='')
+fig.update_yaxes(tickfont=dict(size=12),title_text='', showticklabels=False)
+#fig.update_traces(hovertemplate='%{x} -' + 'Avg_BM: %{customdata[0]:.1f} )
+fig.show()
+
+
+#--------------------------------------------------------------------
+
+# Adult mortality correlation to Life Expectancy
+
+conn = get_conn()
+cursor = conn.cursor()
+
+
+query = """
+select country, year, `Life expectancy`, `Adult mortality`, 
+sum(`Adult mortality`)over(PARTITION by country order by Year) as Rolling_Adult_Life_Mortality
+from worldlifeexpectancy
+where country like '%United Kingdom%';
+"""
+
+cursor.execute(query)
+data = cursor.fetchall()
+
+country = [row [0] for row in data]
+year = [row [1] for row in data]
+Life_Exp = [row [2] for row in data]
+Adult_Mortality = [row [3] for row in data]
+
+data = pd.DataFrame({
+        'Country': country,
+        'Year': year,
+        'Life_Exp': Life_Exp,
+        'Adult_Mortality': Adult_Mortality
+})
+
+fig = px.line(
+        data, x='Year', y='Adult_Mortality',
+        template='simple_white', custom_data=['Year', 'Life_Exp'],
+        title='<b>Adult mortality correlation</b><br><sup> In the UK</sup>', markers=True,
+        labels={'y': 'Adult Mortality'}
+        
+)
+
+
+fig.update_traces(hovertemplate=
+                 "<b>Year</b>: %{customdata[0]}<br>"
+                 "<b>Life Exp</b>: %{customdata[1]:.1f} years<br>", line_color='indianred',
+                 )
+
+
+fig.update_xaxes(tickfont=dict(size=12), title_text='', showticklabels=False)
+fig.update_yaxes(tickfont=dict(size=12),title_text='')
+fig.update_layout(showlegend=True)
+fig.show()
