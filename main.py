@@ -10,15 +10,14 @@ import plotly.graph_objects as go
 
 
 
-# Database
+# Average life expectancy by Year
 
+# Connect SQL
 conn = get_conn()
 
-# SQL
 
 cursor = conn.cursor()
 
-# Average life expectancy by Year
 
 query = """select year, round(AVG(`Life expectancy`),1) as AVG_Life_Expectancy
 from worldlifeexpectancy
@@ -31,9 +30,10 @@ data = cursor.fetchall()
 
 year = [row[0] for row in data]
 Avg_Life_Expectancy = [row[1] for row in data]
-
+data = pd.DataFrame({'Year': year, 'Avg Life Exp': Avg_Life_Expectancy})
 
 data.sort_values('Year', ascending=False, inplace=True)
+
 fig = px.histogram(
         data, x='Year', y='Avg Life Exp',
         template='simple_white',
@@ -41,10 +41,10 @@ fig = px.histogram(
         hover_name='Avg Life Exp'
         
         )
+thirteenth_value = sorted(set(data['Avg Life Exp']))[2]
 
 fig.update_traces(marker_color=['indianred' if x == thirteenth_value else 'grey' for x in data['Avg Life Exp']],hovertemplate='%{x}')
 
-thirteenth_value = sorted(set(data['Avg Life Exp']))[2]
 
 fig.add_trace(
     go.Bar(x=['Avg Life Exp'], y=[0], marker=dict(color='indianred'), showlegend=True, name='Avg Life Exp')
@@ -80,7 +80,7 @@ data = pd.DataFrame({'Country': country, 'Average Life Expectancy': avg_life_exp
 
 
 fig = px.scatter(
-        data, x='Average Life Expectancy', y='Average Life Expectancy',hover_name='Country',
+        data, x='Average Life Expectancy', y='Avg_GDP',hover_name='Country',
         template="simple_white", color='Average Life Expectancy', color_continuous_scale='Reds',
         #labels={'Avg_GDP': 'Average GDP', 'avg_life_exp': 'Average Life Expectancy'},
         title="<b>GDP correlation </b><br><sup>& Life expectancy<sup>", custom_data=data[['Country','Average Life Expectancy', 'Avg_GDP' ]])
@@ -90,7 +90,7 @@ fig.update_traces(hovertemplate="<b>Country</b>: %{customdata[0]}<br>"
                  "<b>Avg Life Exp</b>: %{customdata[1]:.1f} years<br>"
                  "<b>Avg GDP</b>: %{customdata[2]:.2f}")
 fig.update_yaxes(tickfont=dict(size=12),title_text='')
-fig.update_xaxes(tickfont=dict(size=12),title_text='')
+fig.update_xaxes(tickfont=dict(size=12),title_text='', showticklabels=False)
 
 fig.show()
 
@@ -293,20 +293,31 @@ data = pd.DataFrame({
 
 fig = px.line(
         data, x='Year', y='Adult_Mortality',
-        template='simple_white', custom_data=['Year', 'Life_Exp'],
+        template='simple_white', custom_data=['Year', 'Life_Exp', 'Adult_Mortality'],
         title='<b>Adult mortality correlation</b><br><sup> In the UK</sup>', markers=True,
-        labels={'y': 'Adult Mortality'}
+        
         
 )
 
 
-fig.update_traces(hovertemplate=
+fig.add_trace(
+    go.Scatter(x=['Adult_Mortality'],y=[], marker=dict(color='indianred'))
+)
+
+fig.update_traces(
+                  hovertemplate=
                  "<b>Year</b>: %{customdata[0]}<br>"
-                 "<b>Life Exp</b>: %{customdata[1]:.1f} years<br>", line_color='indianred',
+                 "<b>Life Exp</b>: %{customdata[1]:.1f} years<br>" "<b>Adult Mortality</b>: %{customdata[2]:.1f} years<br>", line_color='indianred',
+                 name='Adult Mortality', showlegend=True, hoverinfo='skip'
                  )
 
 
+
+y_values = sorted(data['Year'].unique())
+#x_values = sorted(data['Year'].unique())
+
 fig.update_xaxes(tickfont=dict(size=12), title_text='', showticklabels=False)
-fig.update_yaxes(tickfont=dict(size=12),title_text='')
+fig.update_yaxes(tickfont=dict(size=12),title_text='', 
+                 categoryarray=y_values)
 fig.update_layout(showlegend=True)
 fig.show()
