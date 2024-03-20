@@ -284,6 +284,7 @@ year = [row [1] for row in data]
 Life_Exp = [row [2] for row in data]
 Adult_Mortality = [row [3] for row in data]
 
+
 data = pd.DataFrame({
         'Country': country,
         'Year': year,
@@ -304,10 +305,14 @@ fig.add_trace(
     go.Scatter(x=['Adult_Mortality'],y=[], marker=dict(color='indianred'))
 )
 
+
+
+
 fig.update_traces(
                   hovertemplate=
                  "<b>Year</b>: %{customdata[0]}<br>"
-                 "<b>Life Exp</b>: %{customdata[1]:.1f} years<br>" "<b>Adult Mortality</b>: %{customdata[2]:.1f} years<br>", line_color='indianred',
+                 "<b>Life Exp</b>: %{customdata[1]:.1f} years<br>"
+                 "<b>Adult Mortality</b>: %{customdata[2]:.1f} years<br>", line_color='indianred',
                  name='Adult Mortality', showlegend=True, hoverinfo='skip'
                  )
 
@@ -316,8 +321,8 @@ fig.update_traces(
 y_values = sorted(data['Year'].unique())
 #x_values = sorted(data['Year'].unique())
 
-fig.update_xaxes(tickfont=dict(size=12), title_text='', showticklabels=False)
+fig.update_xaxes(tickfont=dict(size=12), title_text='')
 fig.update_yaxes(tickfont=dict(size=12),title_text='', 
-                 categoryarray=y_values)
+                 categoryarray=y_values, showticklabels=False)
 fig.update_layout(showlegend=True)
 fig.show()
